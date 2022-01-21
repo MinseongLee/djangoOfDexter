@@ -13,6 +13,7 @@ DEBUG = True
 # default : ['localhost', '127.0.0.1', '[::1]']
 ALLOWED_HOSTS = []
 
+LOGIN_REDIRECT_URL = '/'
 
 # Application definition
 
