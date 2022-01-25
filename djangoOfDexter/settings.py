@@ -62,10 +62,17 @@ WSGI_APPLICATION = 'djangoOfDexter.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+DATABASE_HOST_IP = 'localhost'
+DATABASE_USER = 'root'
+DATABASE_PASSWORD = '1111'
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'dexterdb',
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': DATABASE_HOST_IP
     }
 }
 
