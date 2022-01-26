@@ -64,8 +64,14 @@ WSGI_APPLICATION = 'djangoOfDexter.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'dexterdb',
+        'OPTIONS': {
+            'read_default_file': '/etc/mysql/conf.d/dev.cnf',
+            'charset': 'utf8mb4',
+            'init_command': 'set collation_connection=utf8mb4_unicode_ci, default_storage_engine=INNODB, SQL_MODE=STRICT_TRANS_TABLES, innodb_strict_mode=1 ',
+        },
+        'CONN_MAX_AGE': 600,
     }
 }
 
