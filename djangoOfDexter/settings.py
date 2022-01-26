@@ -62,17 +62,16 @@ WSGI_APPLICATION = 'djangoOfDexter.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASE_HOST_IP = 'localhost'
-DATABASE_USER = 'root'
-DATABASE_PASSWORD = '1111'
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dexterdb',
-        'USER': DATABASE_USER,
-        'PASSWORD': DATABASE_PASSWORD,
-        'HOST': DATABASE_HOST_IP
+        'OPTIONS': {
+            'read_default_file': '/etc/mysql/conf.d/dev.cnf',
+            'charset': 'utf8mb4',
+            'init_command': 'set collation_connection=utf8mb4_unicode_ci, default_storage_engine=INNODB, SQL_MODE=STRICT_TRANS_TABLES, innodb_strict_mode=1 ',
+        },
+        'CONN_MAX_AGE': 600,
     }
 }
 
