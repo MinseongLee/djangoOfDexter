@@ -5,6 +5,7 @@ from django.utils import timezone
 # define model
 # models => Post가 table이라고 인식하게 해줌.
 class Post(models.Model):
+    id = models.BigIntegerField().primary_key
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     # for limit text
     title = models.CharField(max_length=200)
