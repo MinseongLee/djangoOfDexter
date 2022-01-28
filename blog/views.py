@@ -1,12 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
-from django.views.generic import DetailView
-from django.views.generic import FormView
-from django.views.generic import ListView
-from django.views.generic import View
+from django.views.generic import DetailView, FormView, ListView, View
 
 from .forms import CommentForm, PostForm
 from .models import Comment, Post
