@@ -1,86 +1,131 @@
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
+from django.views.generic import DetailView
+from django.views.generic import FormView
+from django.views.generic import ListView
+from django.views.generic import View
 
 from .forms import CommentForm, PostForm
 from .models import Comment, Post
 
 
-def post_list(request):
-    posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('published_date')
-    return render(request, 'blog/post_list.html', {'posts': posts})
+class PostList(ListView):
+    def get(self, request):
+        posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('published_date')
+        return render(request,'blog/post_list.html', {'posts': posts})
 
-def post_detail(request, pk):
-    post = Post.objects.get(pk=pk)
-    return render(request, 'blog/post_detail.html', {'post': post})
+class PostDetail(DetailView):
+    def get(self, request, pk):
+        post = Post.objects.get(pk=pk)
+        return render(request, 'blog/post_detail.html', {'post': post})
 
-@login_required
-def post_new(request):
-    if request.method == 'POST':
-        form = PostForm(request.POST)
+class PostNew(LoginRequiredMixin, FormView):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    form_class = PostForm
+    template_name = 'blog/post_edit.html'
+
+    def post(self, request):
+        form = self.get_form()
         if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect('post_detail', pk=post.pk)
-    else:
-        form = PostForm()
-    return render(request, 'blog/post_edit.html', {'form': form})
+            return self.form_valid(form, request)
+        else:
+            return self.form_invalid(form)
 
-@login_required
-def post_edit(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    if request.method == 'POST':
+    def form_valid(self, form, request):
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        return redirect('post_detail', pk=post.pk)
+
+class PostEdit(LoginRequiredMixin, FormView):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    form_class = PostForm
+    template_name = 'blog/post_edit.html'
+
+    def get(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        form = PostForm(instance=post)
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
         form = PostForm(request.POST, instance=post)
         if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect('post_detail', pk=post.pk)
-    else:
-        form = PostForm(instance=post)
-    return render(request, 'blog/post_edit.html', {'form': form})
+            return self.form_valid(form, request)
+        else:
+            return self.form_invalid(form)
 
-@login_required
-def post_draft_list(request):
-    posts = Post.objects.filter(published_date__isnull=True).order_by('created_date')
-    return render(request, 'blog/post_draft_list.html', {'posts': posts})
+    def form_valid(self, form, request):
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        return redirect('post_detail', pk=post.pk)
 
-@login_required
-def post_publish(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    post.publish()
-    return redirect('post_detail', pk=pk)
+class PostDraftList(LoginRequiredMixin, ListView):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    def get(self, request):
+        posts = Post.objects.filter(published_date__isnull=True).order_by('created_date')
+        return render(request, 'blog/post_draft_list.html', {'posts': posts})
 
-@login_required
-def post_remove(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    post.delete()
-    return redirect('post_list')
+class PostPublish(LoginRequiredMixin, View):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    def get(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        post.publish()
+        return redirect('post_detail', pk=pk)
 
-def add_comment_to_post(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    if request.method == 'POST':
-        form = CommentForm(request.POST)
+class PostRemove(LoginRequiredMixin, View):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    def get(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        post.delete()
+        return redirect('post_list')
+
+class AddCommentToPost(LoginRequiredMixin, FormView):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    form_class = CommentForm
+    template_name = 'blog/add_comment_to_post.html'
+
+    def get(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        form = self.get_form()
+        return render(request, 'blog/add_comment_to_post.html', {'form': form, 'post': post})
+
+    def post(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        form = self.get_form()
         if form.is_valid():
-            comment = form.save(commit=False)
-            comment.post = post
-            comment.save()
-            return redirect('post_detail', pk=post.pk)
-    else:
-        form = CommentForm()
-    # 여기서 'post': post 는 생략가능하지만 가독성을 위해 추가
-    return render(request, 'blog/add_comment_to_post.html', {'form': form, 'post': post})
+            return self.form_valid(form, post)
+        else:
+            return self.form_invalid(form)
 
-@login_required
-def comment_approve(request, pk):
-    comment = get_object_or_404(Comment, pk=pk)
-    comment.approve()
-    return redirect('post_detail', pk=comment.post.pk)
+    def form_valid(self, form, post):
+        comment = form.save(commit=False)
+        comment.post = post
+        comment.save()
+        return redirect('post_detail', pk=post.pk)
 
-@login_required
-def comment_remove(request, pk):
-    comment = get_object_or_404(Comment, pk=pk)
-    comment.delete()
-    return redirect('post_detail', pk=comment.post.pk)
+class CommentApprove(LoginRequiredMixin, View):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    def get(self, request, pk):
+        comment = get_object_or_404(Comment, pk=pk)
+        comment.approve()
+        return redirect('post_detail', pk=comment.post.pk)
+    
+class CommentRemove(LoginRequiredMixin, View):
+    login_url = '/login/'
+    redirect_field_name = '/'
+    def get(self, request, pk):
+        comment = get_object_or_404(Comment, pk=pk)
+        comment.delete()
+        return redirect('post_detail', pk=comment.post.pk)
