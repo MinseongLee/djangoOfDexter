@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DetailView, FormView, ListView, View
+from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView, View
 
 from .forms import CommentForm, PostForm
 from .models import Comment, Post
@@ -33,30 +33,15 @@ class PostNew(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.id])
 
-class PostEdit(LoginRequiredMixin, FormView):
+class PostEdit(LoginRequiredMixin, UpdateView):
     login_url = reverse_lazy('login')
     redirect_field_name = '/'
-    form_class = PostForm
+    model = Post
+    fields = ['title', 'text']
     template_name = 'blog/post_edit.html'
 
-    def get(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
-        form = PostForm(instance=post)
-        return render(request, self.template_name, {'form': form})
-
-    def post(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
-        form = PostForm(request.POST, instance=post)
-        if form.is_valid():
-            return self.form_valid(form, request)
-        else:
-            return self.form_invalid(form)
-
-    def form_valid(self, form, request):
-        post = form.save(commit=False)
-        post.author = request.user
-        post.save()
-        return redirect('post_detail', pk=post.pk)
+    def get_success_url(self):
+        return reverse_lazy('post_detail', args=[self.object.id])
 
 class PostDraftList(LoginRequiredMixin, ListView):
     login_url = reverse_lazy('login')
