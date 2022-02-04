@@ -1,11 +1,10 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from .models import Comment, Post
-from .utils import LoginMixin
-
 
 class PostList(ListView):
     queryset = Post.objects.all()
@@ -18,7 +17,7 @@ class PostList(ListView):
 class PostDetail(DetailView):
     model = Post
 
-class PostNew(LoginMixin, CreateView):
+class PostNew(LoginRequiredMixin, CreateView):
     model = Post
     fields = ['title', 'text']
     template_name = 'blog/post_edit.html'
@@ -28,9 +27,9 @@ class PostNew(LoginMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('post_detail', args=[self.object.id])
+        return reverse_lazy('post_detail', kwargs={'pk': self.object.id})
 
-class PostEdit(LoginMixin, UpdateView):
+class PostEdit(LoginRequiredMixin, UpdateView):
     model = Post
     fields = ['title', 'text']
     template_name = 'blog/post_edit.html'
@@ -38,7 +37,7 @@ class PostEdit(LoginMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.id])
 
-class PostDraftList(LoginMixin, ListView):
+class PostDraftList(LoginRequiredMixin, ListView):
     queryset = Post.objects.all()
     template_name = 'blog/post_draft_list.html'
     context_object_name = 'posts'
@@ -46,7 +45,7 @@ class PostDraftList(LoginMixin, ListView):
     def get_queryset(self):
         return self.queryset.filter(published_date__isnull=True).order_by('created_date')
 
-class PostPublish(LoginMixin, DetailView):
+class PostPublish(LoginRequiredMixin, DetailView):
     model = Post
     template_name = 'blog/post_detail.html'
 
@@ -55,11 +54,11 @@ class PostPublish(LoginMixin, DetailView):
         post.publish()
         return post
 
-class PostRemove(LoginMixin, DeleteView):
+class PostRemove(LoginRequiredMixin, DeleteView):
     model = Post
     success_url = reverse_lazy('post_list')
 
-class AddCommentToPost(LoginMixin, CreateView):
+class AddCommentToPost(LoginRequiredMixin, CreateView):
     model = Comment
     fields = ['author', 'text']
     template_name = 'blog/add_comment_to_post.html'
@@ -76,7 +75,7 @@ class AddCommentToPost(LoginMixin, CreateView):
         form = self.get_form()
         return render(request, 'blog/add_comment_to_post.html', {'form': form, 'post': post})
 
-class CommentApprove(LoginMixin, UpdateView):
+class CommentApprove(LoginRequiredMixin, UpdateView):
     model = Comment
     fields = ['approved_comment']
     template_name = 'blog/post_detail.html'
@@ -88,7 +87,7 @@ class CommentApprove(LoginMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.post.id])
 
-class CommentRemove(LoginMixin, DeleteView):
+class CommentRemove(LoginRequiredMixin, DeleteView):
     model = Comment
 
     def get_success_url(self):

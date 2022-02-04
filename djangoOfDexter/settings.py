@@ -10,6 +10,9 @@ SECRET_KEY = 'django-insecure-1l8np(b+4q&61q*%z@8vibbtuac^o-v0v^8e2zc*qx2(9kuiax
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# LoginRequiredMixin 이나 여러 login class들이 디폴트로 참고할 수 있음
+LOGIN_URL = 'login'
+
 # default : ['localhost', '127.0.0.1', '[::1]']
 ALLOWED_HOSTS = []
 
