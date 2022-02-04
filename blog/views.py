@@ -3,21 +3,23 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView, View
+from django.views.generic import CreateView, DeleteView, DetailView, FormView, ListView, UpdateView, View
+from django.views.generic.dates import ArchiveIndexView
 
 from .forms import CommentForm, PostForm
 from .models import Comment, Post
 
 
 class PostList(ListView):
-    def get(self, request):
-        posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('published_date')
-        return render(request,'blog/post_list.html', {'posts': posts})
+    queryset = Post.objects.all()
+    template_name = 'blog/post_list.html'
+    context_object_name = 'posts'
+
+    def get_queryset(self):
+        return self.queryset.filter(published_date__lte=timezone.now()).order_by('published_date')
 
 class PostDetail(DetailView):
-    def get(self, request, pk):
-        post = Post.objects.get(pk=pk)
-        return render(request, 'blog/post_detail.html', {'post': post})
+    model = Post
 
 class PostNew(LoginRequiredMixin, CreateView):
     login_url = reverse_lazy('login')
@@ -46,63 +48,67 @@ class PostEdit(LoginRequiredMixin, UpdateView):
 class PostDraftList(LoginRequiredMixin, ListView):
     login_url = reverse_lazy('login')
     redirect_field_name = '/'
-    def get(self, request):
-        posts = Post.objects.filter(published_date__isnull=True).order_by('created_date')
-        return render(request, 'blog/post_draft_list.html', {'posts': posts})
+    queryset = Post.objects.all()
+    template_name = 'blog/post_draft_list.html'
+    context_object_name = 'posts'
 
-class PostPublish(LoginRequiredMixin, View):
+    def get_queryset(self):
+        return self.queryset.filter(published_date__isnull=True).order_by('created_date')
+
+class PostPublish(LoginRequiredMixin, DetailView):
     login_url = reverse_lazy('login')
     redirect_field_name = '/'
-    def get(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
+    model = Post
+    template_name = 'blog/post_detail.html'
+
+    def get_object(self):
+        post = get_object_or_404(self.model, pk=self.kwargs['pk'])
         post.publish()
-        return redirect('post_detail', pk=pk)
+        return post
 
-class PostRemove(LoginRequiredMixin, View):
+class PostRemove(LoginRequiredMixin, DeleteView):
     login_url = reverse_lazy('login')
     redirect_field_name = '/'
-    def get(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
-        post.delete()
-        return redirect('post_list')
+    model = Post
+    success_url = reverse_lazy('post_list')
 
-class AddCommentToPost(LoginRequiredMixin, FormView):
+class AddCommentToPost(LoginRequiredMixin, CreateView):
     login_url = reverse_lazy('login')
     redirect_field_name = '/'
-    form_class = CommentForm
+    model = Comment
+    fields = ['author', 'text']
     template_name = 'blog/add_comment_to_post.html'
+
+    def form_valid(self, form):
+        form.instance.post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('post_detail', args=[self.object.post.id])
 
     def get(self, request, pk):
         post = get_object_or_404(Post, pk=pk)
         form = self.get_form()
         return render(request, 'blog/add_comment_to_post.html', {'form': form, 'post': post})
 
-    def post(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form, post)
-        else:
-            return self.form_invalid(form)
-
-    def form_valid(self, form, post):
-        comment = form.save(commit=False)
-        comment.post = post
-        comment.save()
-        return redirect('post_detail', pk=post.pk)
-
-class CommentApprove(LoginRequiredMixin, View):
+class CommentApprove(LoginRequiredMixin, UpdateView):
     login_url = reverse_lazy('login')
     redirect_field_name = '/'
-    def get(self, request, pk):
-        comment = get_object_or_404(Comment, pk=pk)
-        comment.approve()
-        return redirect('post_detail', pk=comment.post.pk)
-    
-class CommentRemove(LoginRequiredMixin, View):
+    model = Comment
+    fields = ['approved_comment']
+    template_name = 'blog/post_detail.html'
+
+    def form_valid(self, form):
+        form.instance.approved_comment = True
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('post_detail', args=[self.object.post.id])
+
+class CommentRemove(LoginRequiredMixin, DeleteView):
     login_url = reverse_lazy('login')
     redirect_field_name = '/'
-    def get(self, request, pk):
-        comment = get_object_or_404(Comment, pk=pk)
-        comment.delete()
-        return redirect('post_detail', pk=comment.post.pk)
+    model = Comment
+
+    def get_success_url(self):
+        return reverse_lazy('post_detail', args=[self.object.post.id])
