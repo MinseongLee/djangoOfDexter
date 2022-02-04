@@ -7,7 +7,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('blog.urls')),
     path('login/', LoginView.as_view(), name='login'),
-    # re_path(r'^login/$', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout', kwargs={'next_page': '/'}),
-    # re_path(r'^logout/$', LogoutView.as_view(), name='logout', kwargs={'next_page': '/'}),
 ]
