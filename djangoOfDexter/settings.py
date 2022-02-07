@@ -10,6 +10,9 @@ SECRET_KEY = 'django-insecure-1l8np(b+4q&61q*%z@8vibbtuac^o-v0v^8e2zc*qx2(9kuiax
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# LoginRequiredMixin 이나 여러 login class들이 디폴트로 참고할 수 있음
+LOGIN_URL = 'login'
+
 # default : ['localhost', '127.0.0.1', '[::1]']
 ALLOWED_HOSTS = []
 
@@ -64,8 +67,26 @@ WSGI_APPLICATION = 'djangoOfDexter.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'dexterdb',
+        'OPTIONS': {
+            'read_default_file': '/etc/mysql/conf.d/dev.cnf',
+            'charset': 'utf8mb4',
+            'init_command': 'set collation_connection=utf8mb4_unicode_ci, default_storage_engine=INNODB, SQL_MODE=STRICT_TRANS_TABLES, innodb_strict_mode=1 ',
+        },
+        'CONN_MAX_AGE': 600,
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
     }
 }
 
@@ -98,7 +119,9 @@ TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
-USE_TZ = True
+# db Time zone settings
+# USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
