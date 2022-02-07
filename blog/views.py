@@ -78,7 +78,7 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.approved_comment = True
-        form.instance.post.update_approved_comment_cnt()
+        form.instance.post.plus_approved_comment_cnt()
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -86,6 +86,13 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
 
 class CommentRemove(LoginRequiredMixin, DeleteView):
     model = Comment
+
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg)
+        comment = get_object_or_404(Comment, pk=pk)
+        if comment.approved_comment:
+            comment.post.minus_approved_comment_cnt()
+        return comment
 
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.post.id])

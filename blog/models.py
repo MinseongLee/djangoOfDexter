@@ -22,8 +22,12 @@ class Post(models.Model):
     def approved_comments(self):
         return self.approved_comment_cnt
 
-    def update_approved_comment_cnt(self):
+    def plus_approved_comment_cnt(self):
         self.approved_comment_cnt += 1
+        self.save()
+
+    def minus_approved_comment_cnt(self):
+        self.approved_comment_cnt -= 1
         self.save()
 
     def __str__(self):
