@@ -82,6 +82,7 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.approved_comment = True
+        form.instance.post.update_approved_comment_cnt()
         return super().form_valid(form)
 
     def get_success_url(self):
