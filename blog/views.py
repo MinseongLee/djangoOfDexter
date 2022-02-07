@@ -1,10 +1,11 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect, render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from .models import Comment, Post
+
 
 class PostList(ListView):
     queryset = Post.objects.all()
@@ -69,11 +70,6 @@ class AddCommentToPost(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.post.id])
-
-    def get(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
-        form = self.get_form()
-        return render(request, 'blog/add_comment_to_post.html', {'form': form, 'post': post})
 
 class CommentApprove(LoginRequiredMixin, UpdateView):
     model = Comment
