@@ -87,7 +87,7 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
 class CommentRemove(LoginRequiredMixin, DeleteView):
     model = Comment
 
-    def get_object(self, queryset=None):
+    def get_object(self):
         pk = self.kwargs.get(self.pk_url_kwarg)
         comment = get_object_or_404(Comment, pk=pk)
         if comment.approved_comment:
