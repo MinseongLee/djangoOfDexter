@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -8,6 +9,7 @@ from .models import Comment, Post
 
 
 class PostList(ListView):
+    model = Post
     queryset = Post.objects.all()
     template_name = 'blog/post_list.html'
     context_object_name = 'posts'
@@ -39,6 +41,7 @@ class PostEdit(LoginRequiredMixin, UpdateView):
         return reverse_lazy('post_detail', args=[self.object.id])
 
 class PostDraftList(LoginRequiredMixin, ListView):
+    model = Post
     queryset = Post.objects.all()
     template_name = 'blog/post_draft_list.html'
     context_object_name = 'posts'
@@ -87,12 +90,14 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
 class CommentRemove(LoginRequiredMixin, DeleteView):
     model = Comment
 
-    def get_object(self):
-        pk = self.kwargs.get(self.pk_url_kwarg)
-        comment = get_object_or_404(Comment, pk=pk)
-        if comment.approved_comment:
-            comment.post.minus_approved_comment_cnt()
-        return comment
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = self.get_success_url()
+        if self.object.approved_comment:
+            self.object.post.minus_approved_comment_cnt()
+        self.object.delete()
+        return HttpResponseRedirect(success_url)
+
 
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.post.id])
