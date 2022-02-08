@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseRedirect
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -53,6 +53,7 @@ class PostPublish(LoginRequiredMixin, DetailView):
     model = Post
     template_name = 'blog/post_detail.html'
 
+    @transaction.atomic()
     def get_object(self):
         post = get_object_or_404(self.model, pk=self.kwargs['pk'])
         post.publish()
@@ -79,6 +80,7 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
     fields = ['approved_comment']
     template_name = 'blog/post_detail.html'
 
+    @transaction.atomic()
     def form_valid(self, form):
         form.instance.approved_comment = True
         form.instance.post.plus_approved_comment_cnt()
@@ -90,14 +92,12 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
 class CommentRemove(LoginRequiredMixin, DeleteView):
     model = Comment
 
+    @transaction.atomic()
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        success_url = self.get_success_url()
         if self.object.approved_comment:
             self.object.post.minus_approved_comment_cnt()
-        self.object.delete()
-        return HttpResponseRedirect(success_url)
-
+        return super().delete(request, args, kwargs)
 
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.post.id])
