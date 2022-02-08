@@ -1,12 +1,15 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect, render, get_object_or_404
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from .models import Comment, Post
 
+
 class PostList(ListView):
+    model = Post
     queryset = Post.objects.all()
     template_name = 'blog/post_list.html'
     context_object_name = 'posts'
@@ -38,6 +41,7 @@ class PostEdit(LoginRequiredMixin, UpdateView):
         return reverse_lazy('post_detail', args=[self.object.id])
 
 class PostDraftList(LoginRequiredMixin, ListView):
+    model = Post
     queryset = Post.objects.all()
     template_name = 'blog/post_draft_list.html'
     context_object_name = 'posts'
@@ -49,6 +53,7 @@ class PostPublish(LoginRequiredMixin, DetailView):
     model = Post
     template_name = 'blog/post_detail.html'
 
+    @transaction.atomic()
     def get_object(self):
         post = get_object_or_404(self.model, pk=self.kwargs['pk'])
         post.publish()
@@ -70,18 +75,15 @@ class AddCommentToPost(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.post.id])
 
-    def get(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
-        form = self.get_form()
-        return render(request, 'blog/add_comment_to_post.html', {'form': form, 'post': post})
-
 class CommentApprove(LoginRequiredMixin, UpdateView):
     model = Comment
     fields = ['approved_comment']
     template_name = 'blog/post_detail.html'
 
+    @transaction.atomic()
     def form_valid(self, form):
         form.instance.approved_comment = True
+        form.instance.post.plus_approved_comment_cnt()
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -89,6 +91,13 @@ class CommentApprove(LoginRequiredMixin, UpdateView):
 
 class CommentRemove(LoginRequiredMixin, DeleteView):
     model = Comment
+
+    @transaction.atomic()
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.approved_comment:
+            self.object.post.minus_approved_comment_cnt()
+        return super().delete(request, args, kwargs)
 
     def get_success_url(self):
         return reverse_lazy('post_detail', args=[self.object.post.id])

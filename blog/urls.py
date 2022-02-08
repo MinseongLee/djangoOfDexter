@@ -1,4 +1,4 @@
-from django.urls import include, path, re_path
+from django.urls import path
 
 from .views import (AddCommentToPost, CommentApprove, CommentRemove, PostDetail,
                     PostDraftList, PostEdit, PostList, PostNew, PostPublish, PostRemove)
