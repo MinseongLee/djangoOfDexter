@@ -88,8 +88,11 @@ CACHES = {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'SOCKET_TIMEOUT': 5,
             'SOCKET_CONNECT_TIMEOUT': 5,
-            'max_connections': 50,
-            'timeout': 20,
+            'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'timeout': 20,
+            },
         }
     }
 }
