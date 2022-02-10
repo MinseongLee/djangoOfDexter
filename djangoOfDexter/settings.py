@@ -93,6 +93,10 @@ CACHES = {
                 'max_connections': 50,
                 'timeout': 20,
             },
+            'COMPRESSOR_CLASS': 'redis_cache.compressors.ZLibCompressor',
+            'COMPRESSOR_CLASS_KWARGS': {
+                'level': 5,  # 0 - 9; 0 - no compression; 1 - fastest, biggest; 9 - slowest, smallest
+            },
         }
     }
 }
